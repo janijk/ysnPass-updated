@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "icon": "./icon.png",
+    "orientation": "portrait",
+    "name": "ysnPass",
+    "slug": "ysnPass",
+    "version": "1.0.9",
+    "splash": {
+      "image": "./android/app/src/main/res/splash-160.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#262934"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./adaptive-icon.png",
+        "backgroundColor": "#262934"
+      },
+      "splash": {
+        "mdpi": "./android/app/src/main/res/splash-160.png",
+        "hdpi": "./android/app/src/main/res/splash-240.png",
+        "xhdpi": "./android/app/src/main/res/splash-320.png",
+        "xxhdpi": "./android/app/src/main/res/splash-480.png",
+        "backgroundColor": "#000000",
+        "resizeMode": "native"
+      },
+      "softwareKeyboardLayoutMode": "pan",
+      "versionCode": 10,
+      "package": "com.jjk.ysnPass"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  },
+  "name": "ysnPass"
+}
