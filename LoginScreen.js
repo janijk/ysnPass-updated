@@ -11,17 +11,23 @@ export default function LoginScreen({ navigation }) {
 
     //observer for username in memory
     useEffect(() => {
+        let isMounted = false;
         const checkUser = async () => {
             let result = await AccMethods.getUsualUser();
-            if (result && usualUser == null) {
-                setUsualUser(result);
-                setUser(result);
+            if (!isMounted) {
+                if (result && usualUser == null) {
+                    setUsualUser(result);
+                    setUser(result);
+                } else {
+                    setUsualUser('Username')
+                }
             }
         }
         checkUser();
-    }, []
-    );
-
+        return () => {
+            isMounted == true;
+        };
+    }, []);
     //Sign in existing user  
     async function existingUser() {
         if (user == null || pass == null || user == '' || pass == '') {
@@ -49,6 +55,7 @@ export default function LoginScreen({ navigation }) {
             }
         }
     };
+
     //Confirm password reset
     const confirmPassReset = () => {
         Alert.alert('', 'Are you sure you want\nto reset your password?',

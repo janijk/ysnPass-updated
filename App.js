@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { StyleSheet, View, AppState, TextInput, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -22,22 +22,52 @@ const SignStack = createNativeStackNavigator();
 
 export default function App() {
   const [signed, setSigned] = useState(false);
+  const [pinQuery, setPinQuery] = useState(false);
   const [appIsReady, setAppIsReady] = useState(false);
+  const appState = useRef(AppState.currentState);
 
+  //AppState background / foreground ?
+  useEffect(() => {
+    const checkPin = async () => {
+      let isMounted = false;
+      let result = await AccMethods.getPin();
+      if (!isMounted) {
+        if (result == true) {
+          setPinQuery(true);
+        }
+      }
+    };
+    const subscription = AppState.addEventListener("change", nextAppState => {
+      if (appState.current.match(/active/) && nextAppState === "background") {
+        setAppIsReady(false);
+        checkPin();
+      }
+      appState.current = nextAppState;
+    });
+    return () => {
+      subscription.remove();
+      isMounted = true;
+    };
+  }, []);
   // Is someone signed in
   useEffect(() => {
+    let isMounted = false;
     const checkUser = async () => {
       let result = await AccMethods.currentUser();
-      if (result) {
-        setSigned(true);
-        setAppIsReady(true);
-      } else if (!result) {
-        setAppIsReady(true);
+      if (!isMounted) {
+        if (result) {
+          setSigned(true);
+          setAppIsReady(true);
+        } else if (!result) {
+          setAppIsReady(true);
+        }
       }
     }
     checkUser();
-  },
-  );
+    return () => {
+      isMounted == true;
+    };
+  });
   //Splashscreen
   function Splashi() {
     return (
@@ -53,21 +83,59 @@ export default function App() {
       </View>
     )
   };
+  // Pin query screen
+  function Pinview() {
+    const [enteredPin, setEnteredPin] = useState('');
+    async function doesPinMatch() {
+      let result = await AccMethods.signInPin(enteredPin);
+      if (result == true) {
+        setPinQuery(false);
+      }
+    };
+    if (enteredPin.length == 4) {
+      doesPinMatch();
+    }
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <LinearGradient
+          colors={['#a5c7b7', '#5d4257']}
+          style={styles.background}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+        <Text style={{ fontStyle: "italic", fontSize: 18 }}>Pincode</Text>
+        <TextInput
+          secureTextEntry={true}
+          style={styles.pinTextInput}
+          placeholder='* * * *'
+          keyboardType='numeric'
+          maxLength={4}
+          fontSize={25}
+          autoFocus={true}
+          onChangeText={text => setEnteredPin(text)} />
+      </View>
+    )
+  };
   //Tab navigator   
   function HomeTabs() {
-    //observer: is user logged in
+    //observer: is user logged in    
     useEffect(() => {
+      let isMounted = false;
       const checkUser = async () => {
         let result = await AccMethods.currentUser();
-        if (result) {
-          setSigned(true);
-        } else if (!result) {
-          setSigned(false);
+        if (!isMounted) {
+          if (result) {
+            setSigned(true);
+          } else if (!result) {
+            setSigned(false);
+          }
         }
       }
       checkUser();
-    },
-    );
+      return () => {
+        isMounted == true;
+      };
+    });
     return (
       <Tab.Navigator
         screenOptions={({ route }) => ({
@@ -108,19 +176,24 @@ export default function App() {
   }
   // Sign in stack
   function SignInStackScreen() {
-    //observer: is user logged in
+    //observer: is user logged in    
     useEffect(() => {
+      let isMounted = false;
       const checkUser = async () => {
         let result = await AccMethods.currentUser();
-        if (result) {
-          setSigned(true);
-        } else if (!result) {
-          setSigned(false);
+        if (!isMounted) {
+          if (result) {
+            setSigned(true);
+          } else if (!result) {
+            setSigned(false);
+          }
         }
       }
       checkUser();
-    },
-    );
+      return () => {
+        isMounted == true;
+      };
+    });
     return (
       <SignStack.Navigator>
         <SignStack.Screen name="login" component={LoginScreen} options={{ headerShown: false }} />
@@ -133,20 +206,29 @@ export default function App() {
     return (
       <Stack.Navigator>
         {
-          !signed ? (
+          !pinQuery ? (
             <>
-              <Stack.Screen name='signIn' component={SignInStackScreen} options={{ headerShown: false }} />
+              {
+                !signed ? (
+                  <>
+                    <Stack.Screen name='signIn' component={SignInStackScreen} options={{ headerShown: false }} />
+                  </>
+                ) : (
+                  <>
+                    <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
+                  </>
+                )
+              }
             </>
           ) : (
             <>
-              <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerShown: false }} />
+              <Stack.Screen name="pinview" component={Pinview} options={{ headerShown: false }} />
             </>
           )
         }
       </Stack.Navigator>
     )
   };
-
   return (
     <NavigationContainer>
       <RootSiblingParent>
@@ -212,13 +294,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     opacity: 0.65
   },
-  logScreenTextInputs: {
+  pinTextInput: {
     borderRadius: 10,
     overflow: 'hidden',
     borderColor: 'black',
     borderWidth: 1,
-    width: 200,
-    height: 35,
+    width: 150,
+    height: 50,
     marginTop: 10,
     textAlign: 'center'
   },

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TextInput, View, Pressable, Alert, Image } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { StyleSheet, Text, TextInput, View, Pressable, Alert } from 'react-native';
 import { Overlay, Switch } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-root-toast';
@@ -10,13 +9,18 @@ export default function SettingsScreen() {
     const [passCurrent, setPassCurrent] = useState();
     const [pass1, setPass1] = useState('');
     const [pass2, setPass2] = useState();
+    const [pincode, setPincode] = useState('');
+    const [modalVisible, setModalVisible] = useState(false);
     const [modalVisible2, setModalVisible2] = useState(false);
     const [isEnabledRememberUser, setIsEnabledRememberUser] = useState(false);
     const toggleSwitchRememberUser = () => setIsEnabledRememberUser(previousState => !previousState);
+    const [isEnabledPin, setIsEnabledPin] = useState(null);
+    const toggleSwitchPin = () => setIsEnabledPin(previousState => !previousState);
 
-    //Observer for remember user
+    //Observer for remember user and pin
     useEffect(() => {
         checkForState();
+        checkForStatePin();
     }, []
     );
     useEffect(() => {
@@ -27,6 +31,14 @@ export default function SettingsScreen() {
         }
     }, [isEnabledRememberUser]
     );
+    useEffect(() => {
+        if (isEnabledPin == false) {
+            pin(false);
+        } else if (isEnabledPin == true) {
+            pin(true, pincode);
+        }
+    }, [isEnabledPin]
+    );
     //Save info about remembering user
     async function rememberThisUser(option) {
         if (option == false) {
@@ -36,13 +48,56 @@ export default function SettingsScreen() {
             await AccMethods.setUsualUser(true, user);
         }
     };
-    // Check state for switch
+    //Save info about pin
+    async function pin(option) {
+        if (option == false) {
+            await AccMethods.setPin(false);
+        } else if (option == true) {
+            let result = await AccMethods.getPin();
+            if (result) {
+                return;
+            } else {
+                setModalVisible(true);
+            }
+        }
+    };
+    // Check state for switches
     async function checkForState() {
         let result = await AccMethods.getUsualUser();
-        if (result) {
-            setIsEnabledRememberUser(true)
+        if (result == false) {
+            setIsEnabledRememberUser(false);
         } else {
-            setIsEnabledRememberUser(false)
+            setIsEnabledRememberUser(true)
+        }
+    };
+    async function checkForStatePin() {
+        let result = await AccMethods.getPin();
+        if (result == true) {
+            setIsEnabledPin(true);
+        } else if (result == false) {
+            setIsEnabledPin(false);
+        }
+    };
+    // modal backdrop press
+    const noPin = () => {
+        setModalVisible(false);
+        setPincode('');
+        setIsEnabledPin(false);
+    };
+    // Set pincode
+    async function setThisPincode() {
+        if (pincode.length == 4) {
+            let result = await AccMethods.setPin(true, pincode)
+            if (result) {
+                Toast.show(`✔  Pincode set`, {
+                    duration: Toast.durations.SHORT,
+                    backgroundColor: 'green',
+                    position: -75,
+                    animation: true,
+                    hideOnPress: true,
+                });
+                setModalVisible(false);
+            }
         }
     };
     //Change password
@@ -95,7 +150,7 @@ export default function SettingsScreen() {
                         </LinearGradient>
                     )}
                 </Pressable>
-                <Pressable style={styles.logScreenButtons} onPress={console.log('not yet implemented')}>
+                <Pressable style={styles.logScreenButtons} onPress={null}>
                     {({ pressed }) => (
                         <LinearGradient
                             colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}
@@ -107,7 +162,7 @@ export default function SettingsScreen() {
                         </LinearGradient>
                     )}
                 </Pressable>
-                <Pressable style={styles.logScreenButtons} onPress={console.log('not yet implemented')}>
+                <Pressable style={styles.logScreenButtons} onPress={null}>
                     {({ pressed }) => (
                         <LinearGradient
                             colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}
@@ -132,9 +187,21 @@ export default function SettingsScreen() {
                         />
                     </View>
                 </View>
+                <View style={styles.options}>
+                    <View >
+                        <View style={styles.switchText}><Text>Pincode</Text></View>
+                    </View>
+                    <View>
+                        <Switch
+                            trackColor={{ false: "#767577", true: "#355AC5" }}
+                            thumbColor={isEnabledPin ? "#0477ea" : "darkgrey"}
+                            onValueChange={toggleSwitchPin}
+                            value={isEnabledPin}
+                        />
+                    </View>
+                </View>
             </View>
-            <View style={{ flex: 1 }}>
-            </View>
+
             <Overlay
                 isVisible={modalVisible2}
                 onBackdropPress={() => setModalVisible2(false)}
@@ -146,6 +213,7 @@ export default function SettingsScreen() {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                 />
+                <Text style={{ fontStyle: "italic", fontSize: 18, textAlign: 'center' }}>Change Password</Text>
                 <TextInput
                     secureTextEntry={true}
                     style={styles.logScreenTextInputs}
@@ -174,20 +242,41 @@ export default function SettingsScreen() {
                     )}
                 </Pressable>
             </Overlay>
-            {/* maybe future update
-        <Pressable style={styles.pressableAdd} onPress={() => setModalVisible2(true)}>
-          {({ pressed }) => (
-            <LinearGradient
-              colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}
-              start={{ x: 0.0, y: 0.25 }}
-              end={{ x: 1.0, y: 1.0 }}
-              locations={[0.3, 1.0]}
-              style={styles.absoluteButton}>
-              <Ionicons name={"md-finger-print-outline"} size={25} />
-            </LinearGradient>
-          )}
-        </Pressable>
-          */}
+            <Overlay
+                isVisible={modalVisible}
+                onBackdropPress={() => noPin()}
+                overlayStyle={{ borderRadius: 15, elevation: 8 }}
+            >
+                <LinearGradient
+                    colors={['#a5c7b7', '#5d4257']}
+                    style={styles.backgroundOverlay}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                />
+                <Text style={{ fontStyle: "italic", fontSize: 18, textAlign: 'center', width: 200 }}>Set Pincode</Text>
+                <TextInput
+                    secureTextEntry={true}
+                    style={styles.pinTextInputs}
+                    placeholder='Pincode'
+                    keyboardType='numeric'
+                    maxLength={4}
+                    fontSize={15}
+                    onChangeText={text => setPincode(text)} />
+                <Pressable style={styles.overlayButton} onPress={() => setThisPincode()}>
+                    {({ pressed }) => (
+                        <LinearGradient
+                            colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}
+                            start={{ x: 0.0, y: 0.25 }}
+                            end={{ x: 1.0, y: 1.0 }}
+                            locations={[0.3, 1.0]}
+                            style={styles.button}>
+                            <Text style={styles.textStyling}>Set</Text>
+                        </LinearGradient>
+                    )}
+                </Pressable>
+            </Overlay>
+            <View style={{ flex: 1 }}>
+            </View>
         </View>
     )
 };
@@ -227,8 +316,21 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         width: 200,
         height: 35,
-        marginTop: 10,
+        marginTop: 15,
+        marginHorizontal: 20,
         textAlign: 'center'
+    },
+    pinTextInputs: {
+        borderRadius: 10,
+        overflow: 'hidden',
+        borderColor: 'black',
+        borderWidth: 1,
+        width: 100,
+        height: 35,
+        marginTop: 15,
+        marginHorizontal: 20,
+        textAlign: 'center',
+        alignSelf: 'center'
     },
     background: {
         position: 'absolute',
@@ -246,16 +348,19 @@ const styles = StyleSheet.create({
         borderRadius: 15
     },
     overlayButton: {
-        marginTop: 10,
-        borderRadius: 10
+        marginTop: 20,
+        borderRadius: 10,
+        marginHorizontal: 20,
+
     },
     options: {
         flexDirection: 'row',
         width: '70%',
-        marginTop: 20
+        marginTop: 15
     },
     switchText: {
         height: 48,
-        justifyContent: 'center'
+        justifyContent: 'center',
+        width: 150
     },
 });

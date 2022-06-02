@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, Pressable, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Pressable, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as AccMethods from './AccountMethods';
+import { Ionicons } from '@expo/vector-icons';
+
 
 export default function HomeScreen({ navigation }) {
     const [signOutButton, setSignOutButton] = useState(false);
@@ -13,12 +15,20 @@ export default function HomeScreen({ navigation }) {
             navigation.navigate('HomeTwo');
         }
     };
+    //Change signout yes/no back to signout after 2sec
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setSignOutButton();
+        }, 2000);
+        return () => clearTimeout(timeout);
+    }, [signOutButton]
+    );
     //View for sign out buttons
     const SignOutNow = () => {
         return (
             !signOutButton ? (
                 <>
-                    <Pressable style={styles.logScreenButtons} onPress={setSignOutButton}>
+                    <Pressable style={styles.logScreenButtons} onPress={() => setSignOutButton(true)}>
                         {({ pressed }) => (
                             <LinearGradient
                                 colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}
@@ -26,6 +36,7 @@ export default function HomeScreen({ navigation }) {
                                 end={{ x: 1.0, y: 1.0 }}
                                 locations={[0.3, 1.0]}
                                 style={styles.button}>
+                                <Ionicons name={"log-out-outline"} size={20} />
                                 <Text style={styles.textStyling}>Sign out</Text>
                             </LinearGradient>
                         )}
@@ -84,6 +95,7 @@ export default function HomeScreen({ navigation }) {
                             end={{ x: 1.0, y: 1.0 }}
                             locations={[0.3, 1.0]}
                             style={styles.button}>
+                            <Ionicons name={"settings-outline"} size={20} />
                             <Text style={styles.textStyling}>Settings</Text>
                         </LinearGradient>
                     )}
@@ -91,20 +103,6 @@ export default function HomeScreen({ navigation }) {
             </View>
             <View style={{ flex: 1 }}>
             </View>
-            {/* maybe future update
-        <Pressable style={styles.pressableAdd} onPress={() => setModalVisible2(true)}>
-          {({ pressed }) => (
-            <LinearGradient
-              colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}
-              start={{ x: 0.0, y: 0.25 }}
-              end={{ x: 1.0, y: 1.0 }}
-              locations={[0.3, 1.0]}
-              style={styles.absoluteButton}>
-              <Ionicons name={"md-finger-print-outline"} size={25} />
-            </LinearGradient>
-          )}
-        </Pressable>
-          */}
         </View>
     )
 };
@@ -129,6 +127,7 @@ const styles = StyleSheet.create({
         padding: 10,
         alignItems: 'center',
         borderRadius: 10,
+        flexDirection: 'row'
     },
     logScreenButtons: {
         borderRadius: 10,
@@ -145,7 +144,8 @@ const styles = StyleSheet.create({
     textStyling: {
         color: '#FFFFFF',
         fontSize: 15,
-        opacity: 0.65
+        opacity: 0.65,
+        marginLeft: 15
     },
     logScreenTextInputs: {
         borderRadius: 10,

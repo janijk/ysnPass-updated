@@ -92,7 +92,6 @@ export async function removeCurrentUser() {
 // Set remember username on/off
 export async function setUsualUser(param, user) {
     const key = 'rememberThisUser';
-    const keyTwo = 'currentUser';
     if (param == true) {
         const value = { value: 'yes', user: user };
         let valueString = JSON.stringify(value);
@@ -110,6 +109,44 @@ export async function getUsualUser() {
     let parsed = JSON.parse(result);
     if (parsed.value == 'yes') {
         return parsed.user;
+    } else {
+        return false;
+    }
+};
+// Set pincode on/off
+export async function setPin(param, pin) {
+    const key = 'pincode';
+    if (param == true) {
+        const value = { value: 'yes', pincode: pin };
+        let valueString = JSON.stringify(value);
+        await SecureStore.setItemAsync(key, valueString);
+        return true;
+    } else if (param == false) {
+        const value = { value: 'no', pincode: '' };
+        let valueString = JSON.stringify(value);
+        await SecureStore.setItemAsync(key, valueString);
+    }
+};
+//Is pincode on
+export async function getPin() {
+    const key = 'pincode';
+    let result = await SecureStore.getItemAsync(key);
+    let parsed = JSON.parse(result);
+    if (parsed.value == 'yes') {
+        return true;
+    } else {
+        return false;
+    }
+};
+// Sign in with pin
+export async function signInPin(pin) {
+    const key = 'pincode';
+    let result = await SecureStore.getItemAsync(key);
+    let x = JSON.parse(result);
+    if (x.pincode == pin) {
+        return true;
+    } else {
+        return false;
     }
 };
 // Save new credentials

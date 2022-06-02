@@ -10,8 +10,6 @@ import Tooltip from 'rn-tooltip';
 import * as AccMethods from './AccountMethods';
 import { useIsFocused } from '@react-navigation/native';
 
-
-
 export default function PasswordsScreen() {
   const [credentials, setCredentials] = useState([]);
   const [loggedUser, setLoggedUser] = useState();
@@ -25,18 +23,23 @@ export default function PasswordsScreen() {
   const [security, setSecurity] = useState(true);
   const isFocused = useIsFocused();
 
-  // Get current user uid
+  // Get current user uid and update credential list
   useEffect(() => {
     const checkUser = async () => {
+      let isMounted = true;
       let result = await AccMethods.currentUserName();
-      if (result) {
-        let uid = await AccMethods.getUID(result);
-        setLoggedUser(uid);
-        let creds = await AccMethods.getCredentials(uid);
-        setCredentials(creds);
+      if (isMounted) {
+        if (result) {
+          let uid = await AccMethods.getUID(result);
+          setLoggedUser(uid);
+          let creds = await AccMethods.getCredentials(uid);
+          setCredentials(creds);
+        }
       }
     }
-    checkUser();
+    if (isFocused == true) {
+      checkUser();
+    }
   }, [isFocused]
   );
   //Copy username or password to clipboard
@@ -179,7 +182,7 @@ export default function PasswordsScreen() {
                   <Button
                     type="clear"
                     onPress={() => editCred(index)}
-                    icon={<MaterialIcons name="edit" size={15} />}
+                    icon={<Ionicons name="build-outline" size={15} />}
                   />
                   <Button
                     type="clear"
