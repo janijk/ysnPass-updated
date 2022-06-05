@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, View, Pressable, Alert } from 'react-native';
 import { Overlay, Switch } from 'react-native-elements';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as FileSystem from 'expo-file-system';
+import { StorageAccessFramework, writeAsStringAsync } from 'expo-file-system';
+
 import Toast from 'react-native-root-toast';
 import * as AccMethods from './AccountMethods';
 
@@ -128,6 +131,50 @@ export default function SettingsScreen() {
             Alert.alert('', 'Passwords dont match.')
         }
     };
+    //Download credentials as JSON file
+    async function downloadFile() {
+        let user = await AccMethods.currentUserName();
+        let uid = await AccMethods.getUID(user);
+        let result = await AccMethods.getCredentials(uid);
+        let json = JSON.stringify(result);
+        const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+
+        await StorageAccessFramework.createFileAsync(
+            permissions.directoryUri,
+            'Credentials',
+            'application/json'
+        )
+            .then(async (uri) => {
+                console.log('what')
+                await FileSystem.writeAsStringAsync(uri, json);
+            })
+            .catch(error => {
+                console.log(uri)
+                console.error(error);
+            });
+    };
+    //Upload credentials from JSON file
+    async function uploadFile() {
+        let user = await AccMethods.currentUserName();
+        let uid = await AccMethods.getUID(user);
+        const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+        let creds = '';
+
+        await StorageAccessFramework.readDirectoryAsync(permissions.directoryUri)
+            .then(async (uri) => {
+                if (uri.indexOf('Credentials.json')) {
+                    creds = await FileSystem.readAsStringAsync(uri[0]);
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                Alert.alert('', 'Credentials.json not found in directory.');
+            });
+
+        if (creds != '') {
+            await AccMethods.uploadJSON(uid, creds);
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -150,7 +197,7 @@ export default function SettingsScreen() {
                         </LinearGradient>
                     )}
                 </Pressable>
-                <Pressable style={styles.logScreenButtons} onPress={null}>
+                <Pressable style={styles.logScreenButtons} onPress={() => downloadFile()}>
                     {({ pressed }) => (
                         <LinearGradient
                             colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}
@@ -162,7 +209,7 @@ export default function SettingsScreen() {
                         </LinearGradient>
                     )}
                 </Pressable>
-                <Pressable style={styles.logScreenButtons} onPress={null}>
+                <Pressable style={styles.logScreenButtons} onPress={() => uploadFile()}>
                     {({ pressed }) => (
                         <LinearGradient
                             colors={pressed ? ['#567ef0', '#567ef0'] : ['#355AC5', '#51aef0']}

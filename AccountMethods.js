@@ -169,12 +169,29 @@ export async function addCredentials(uid, creds) {
 // Get users saved credentials
 export async function getCredentials(uid) {
     let result = await SecureStore.getItemAsync(uid);
-    if (result) {
+    if (result == '[]') {
+        return false;
+    } else {
         let parsed = JSON.parse(result);
         return parsed;
-    } else {
-        return false;
     }
+};
+// Upload JSON File to creds
+export async function uploadJSON(uid, creds) {
+    let oldList = await getCredentials(uid);
+    if (oldList) {
+        let parsOld = JSON.stringify(oldList)
+        let noBrktOld = parsOld.replace(/[[\]]/g, "");
+        let noBrktNew = creds.replace(/[[\]]/g, "");
+        let full = noBrktOld + ',' + noBrktNew;
+        let inBrackets = '[' + full + ']';
+        await SecureStore.setItemAsync(uid, inBrackets);
+        return true;
+    } else if (!oldList) {
+        await SecureStore.setItemAsync(uid, creds);
+        return true;
+    }
+
 };
 // Edit credential info
 export async function editCredentials(uid, edits, index) {
